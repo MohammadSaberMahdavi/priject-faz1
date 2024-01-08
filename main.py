@@ -236,3 +236,67 @@ class view_all():
             print("No users found.")
 
 main()
+
+
+
+class Clinic:
+    def __init__(self, clinic_id, name, address, contact_info, services, availability):
+        self.clinic_id = clinic_id
+        self.name = name
+        self.address = address
+        self.contact_info = contact_info
+        self.services = services
+        self.availability = availability
+        self.appointments = []
+
+    def add_clinic(self, clinic_id, name, address, contact_info, services, availability):
+        # connect to database
+        conn = sqlite3.connect('clinics.db')
+        curser = conn.cursor()
+        # Create the table if it does not exist
+        curser.execute('''
+            CREATE TABLE IF NOT EXISTS clinics (
+                clinic_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT,
+                address TEXT,
+                contact_info TEXT,
+                services TEXT,
+                availability TEXT
+            )
+        ''') 
+        
+        # create query
+        curser.execute('''
+            INSERT INTO clinics (name, address, contact_info, services, availability)''')
+        
+        # commit changes
+        conn.commit()
+        # close connection
+        conn.close()
+        
+        # create new clinic object
+        new_clinic = Clinic(clinic_id, name, address, contact_info, services, availability)
+        
+        return new_clinic
+    
+
+def register_clinic():
+    print("Welcome to the Registration Process!")
+    
+    # getting input from user
+    clinic_id = input("Enter your clinic ID: ")
+    name = input("Enter your clinic name: ")
+    address = input("Enter your clinic address: ")
+    contact_info = input("Enter your clinic contact info: ")
+    services = input("Enter your clinic services: ")
+    availability = input("Enter your clinic availability: ")
+    
+    # creating new clinic object
+    new_clinic = Clinic.add_clinic(clinic_id, name, address, contact_info, services, availability)
+    
+    # printing results
+    print(f"Clinic {new_clinic.name} with ID {new_clinic.clinic_id} added successfully.")
+    
+    
+    
+    
