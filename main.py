@@ -279,6 +279,37 @@ class Clinic:
         
         return new_clinic
     
+    
+    def update_clinic_info(self, new_name, new_address, new_contact_info, new_services):
+        
+        # connect to database
+        conn = sqlite3.connect('clinics.db')
+        curser = conn.cursor()
+        
+        # search for clinic with the name of clinic
+        curser.execute('''
+            select * from clinics 
+            where name =?''',
+            (new_name,))
+        # check if clinic exists
+        if curser.fetchone():
+            # update the clinic info
+            curser.execute('''
+                UPDATE clinics
+                SET name =?, address =?, contact_info =?, services =?
+                WHERE name =?''',
+                (new_name, new_address, new_contact_info, new_services, new_name))
+            
+            # commit changes
+            conn.commit()
+            # close connection
+            conn.close()
+            # create new clinic object
+            update_clinic = Clinic(self.clinic_id, new_name, new_address, new_contact_info, new_services, self.availability)
+            print(f"Clinic {new_name} with ID {self.clinic_id} updated successfully.")
+            return update_clinic
+        
+    
 
 def register_clinic():
     print("Welcome to the Registration Process!")
@@ -297,6 +328,23 @@ def register_clinic():
     # printing results
     print(f"Clinic {new_clinic.name} with ID {new_clinic.clinic_id} added successfully.")
     
-    
+
+def update_clinic_info():
+    print("Welcome to the Clinic Info Update Process!")
+
+    # getting input from user
+    new_name = input("Enter the new clinic name: ")
+    new_address = input("Enter the new clinic address: ")
+    new_contact_info = input("Enter the new clinic contact info: ")
+    new_services = input("Enter the new clinic services: ")
+
+    # creating new clinic object
+    update_clinic = Clinic.update_clinic_info(new_name, new_address, new_contact_info, new_services)
+
+    # printing results
+    if update_clinic:
+        print(f"Clinic {update_clinic.name} with ID {update_clinic.clinic_id} updated successfully.")
+
+  
     
     
