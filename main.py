@@ -5,6 +5,7 @@ def main():
     while True:
         print("1.Register")
         print("2.Login")
+        print("3.View User Information")
 
         Select_Options = input(" Select_Options:")
 
@@ -12,8 +13,10 @@ def main():
             register_user()
         if Select_Options == "2":
             login_user()
-
-
+        if Select_Options == "3":
+            # چک کردن نقش کاربر فعلی
+            user_type = input("Enter your user type: ")
+            view_all.view_all_users(user_type)
 class User:
     def __init__(self, user_id, username, email, password, user_type):
         self.user_id = user_id
@@ -21,6 +24,7 @@ class User:
         self.email = email
         self.password = password
         self.user_type = user_type
+
 
     @classmethod
     def register(cls, username, email, password, user_type):
@@ -145,7 +149,7 @@ def register_user():
     username = input("Enter your username: ")
     email = input("Enter your email: ")
     password = input("Enter your password: ")
-    user_type = input("Enter your user type (e.g., patient, staff): ")
+    user_type = input("Enter your user type (Monshi,Bimar): ")
 
     # صدا زدن متد register و دریافت نتیجه
     registered_user = User.register(username, email, password, user_type)
@@ -205,5 +209,30 @@ def update_user_profile():
 
         print("\nUser with the provided ID not found. Profile update failed.")
 
+class view_all():
+    @classmethod
+    def view_all_users(cls,user_type):
+        if user_type != 'Monshi':
+            print("Access denied. Only secretaries can view user information.")
+            return
+        # نمایش همه کاربران در یک جدول
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+
+        # اجرای کوئری برای دریافت همه کاربران
+        cursor.execute('SELECT * FROM users')
+        users = cursor.fetchall()
+
+        # بستن اتصال
+        conn.close()
+
+        if users:
+            print("All Users:")
+            print("{:<20} {:<20} {:<20} {:<20} ".format("User ID", "Username", "Email", "User Type"))
+            print("-" * 90)
+            for user in users:
+                print("{:<20} {:<20} {:<20} {:<20} ".format(user[0], user[1], user[2],  user[4]))
+        else:
+            print("No users found.")
 
 main()
