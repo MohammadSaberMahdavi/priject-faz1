@@ -115,6 +115,28 @@ class User:
             conn.close()
             return None
 
+        def view_appointments(self):
+            # نمایش نوبت‌های اختصاص یافته به کاربر
+            dbase = sqlite3.connect('users.db')
+            cursor = dbase.cursor()
+
+            view_query = f'''
+                SELECT * FROM appointments
+                WHERE user_id = ?
+            '''
+
+            cursor.execute(view_query, (self.user_id,))
+            appointments = cursor.fetchall()
+
+            dbase.close()
+
+            if appointments:
+                print("Appointments:")
+                for appointment in appointments:
+                    print(appointment)
+            else:
+                print("You dont have any Appointments")
+
 
 def register_user():
     print("Welcome to the Registration Process!")
