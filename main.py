@@ -80,6 +80,41 @@ class User:
         else:
             return None
 
+    @classmethod
+    def update_profile(cls, user_id, new_username, new_email, new_password):
+        # اتصال به دیتابیس
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+
+        # جستجو بر اساس شناسه کاربر
+        cursor.execute('''
+            SELECT * FROM users
+            WHERE user_id = ?
+        ''', (user_id,))
+
+        user_data = cursor.fetchone()
+
+        if user_data:
+            # اگر کاربر با شناسه مورد نظر یافت شد
+            # اپدیت اطلاعات
+            cursor.execute('''
+                UPDATE users
+                SET username = ?, email = ?, password = ?
+                WHERE user_id = ?
+            ''', (new_username, new_email, new_password, user_id))
+
+            # ذخیره تغییرات و بستن اتصال
+            conn.commit()
+            conn.close()
+
+            # ایجاد نمونه کاربر با اطلاعات به‌روزرسانی شده
+            updated_user = cls(user_id, new_username, new_email, new_password, user_data[4])
+            return updated_user
+        else:
+            # اگر کاربر با شناسه مورد نظر یافت نشد
+            conn.close()
+            return None
+
 
 def register_user():
     print("Welcome to the Registration Process!")
@@ -116,7 +151,7 @@ def login_user():
         print("3.Back")
         Login_Options = input("Login_Options:")
         if Login_Options == "1":
-            pass
+            update_user_profile()
 
         # if l_o=="2":
 
@@ -126,3 +161,27 @@ def login_user():
         print("\nLogin Failed! Invalid username or password.")
         main()
 
+
+def update_user_profile():
+    print("Welcome to the Profile Update Process!")
+
+    # گرفتن ورودی‌های مورد نیاز برای آپدیت پروفایل
+    user_id = int(input("Enter your user ID: "))
+    new_username = input("Enter your new username (leave empty to keep current): ")
+    new_email = input("Enter your new email (leave empty to keep current): ")
+    new_password = input("Enter your new password (leave empty to keep current): ")
+
+    # صدا زدن متد update_profile و دریافت نتیجه
+    updated_user = User.update_profile(user_id, new_username, new_email, new_password)
+
+    if updated_user:
+        print("\nProfile Update Successful!")
+        print("Updated User ID:", updated_user.user_id)
+        print("Updated Username:", updated_user.username)
+        print("Updated Email:", updated_user.email)
+        print("Updated User Type:", updated_user.user_type)
+
+        print("\nUser with the provided ID not found. Profile update failed.")
+
+
+main()
