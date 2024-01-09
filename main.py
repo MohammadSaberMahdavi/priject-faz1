@@ -281,7 +281,6 @@ class Clinic:
     
     
     def update_clinic_info(self, new_name, new_address, new_contact_info, new_services):
-        
         # connect to database
         conn = sqlite3.connect('clinics.db')
         curser = conn.cursor()
@@ -308,6 +307,27 @@ class Clinic:
             update_clinic = Clinic(self.clinic_id, new_name, new_address, new_contact_info, new_services, self.availability)
             print(f"Clinic {new_name} with ID {self.clinic_id} updated successfully.")
             return update_clinic
+        
+        
+    def view_appointment(self, appointment_id):
+        # connect to database
+        conn = sqlite3.connect('appointments.db')
+        cursor = conn.cursor()
+
+        # search for appointment using appointment_id
+        cursor.execute('''
+            SELECT * FROM appointments
+            WHERE appointment_id = ?''',
+            (appointment_id,))
+
+        appointment_data = cursor.fetchone()
+
+        if appointment_data:
+            appointment_id, date, time, patient_name = appointment_data
+            print(f"Appointment ID: {appointment_id} Date: {date} Time: {time} Patient Name: {patient_name}")
+            return appointment_data
+        else:
+            print("Appointment not found.")
         
     
 
@@ -346,5 +366,5 @@ def update_clinic_info():
         print(f"Clinic {update_clinic.name} with ID {update_clinic.clinic_id} updated successfully.")
 
   
-    
+
     
