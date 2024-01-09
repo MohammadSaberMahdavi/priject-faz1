@@ -1,22 +1,8 @@
 from datetime import datetime
 import sqlite3
+import re
 
-def main():
-    while True:
-        print("1.Register")
-        print("2.Login")
-        print("3.View User Information")
 
-        Select_Options = input(" Select_Options:")
-
-        if Select_Options == "1":
-            register_user()
-        if Select_Options == "2":
-            login_user()
-        if Select_Options == "3":
-            # چک کردن نقش کاربر فعلی
-            user_type = input("Enter your user type: ")
-            view_all.view_all_users(user_type)
 class User:
     def __init__(self, user_id, username, email, password, user_type):
         self.user_id = user_id
@@ -24,7 +10,6 @@ class User:
         self.email = email
         self.password = password
         self.user_type = user_type
-
 
     @classmethod
     def register(cls, username, email, password, user_type):
@@ -148,8 +133,14 @@ def register_user():
     # گرفتن ورودی‌های مورد نیاز برای ثبت نام
     username = input("Enter your username: ")
     email = input("Enter your email: ")
+    while not is_valid_email(email):
+        print("Invalid email format. Please enter a valid email.")
+        email = input("Enter your email: ")
     password = input("Enter your password: ")
     user_type = input("Enter your user type (Monshi,Bimar): ")
+    while user_type not in ['bimar', 'monshi']:
+        print("Invalid user type. Please enter either 'Bimar' or 'Monshi'.")
+        user_type = input("Enter your user type (Bimar/Monshi): ").lower()
 
     # صدا زدن متد register و دریافت نتیجه
     registered_user = User.register(username, email, password, user_type)
@@ -161,6 +152,7 @@ def register_user():
     print("Email:", registered_user.email)
     print("User Type:", registered_user.user_type)
 
+
 def login_user():
     print("Welcome to the Login Process!")
     username = input("Enter your username: ")
@@ -171,21 +163,16 @@ def login_user():
         print("Username:", logged_in_user.username)
         print("Email:", logged_in_user.email)
         print("User Type:", logged_in_user.user_type)
+        if logged_in_user:
+            if logged_in_user.user_type == "Monshi":
+                monshi_menu(logged_in_user)
+            elif logged_in_user.user_type == "Bimar":
+                # اگر نوع کاربر بیمار باشد، منو مخصوص بیمار فراخوانی شود (تابع مربوطه تعریف شود)
+                bimar_menu(logged_in_user)
+            else:
+                print("Invalid user type.")
 
-        print("1.Update Profile")
-        print("2")
-        print("3.Back")
-        Login_Options = input("Login_Options:")
-        if Login_Options == "1":
-            update_user_profile()
 
-        # if l_o=="2":
-
-        if Login_Options == "3":
-            main()
-    else:
-        print("\nLogin Failed! Invalid username or password.")
-        main()
 
 
 def update_user_profile():
@@ -209,12 +196,10 @@ def update_user_profile():
 
         print("\nUser with the provided ID not found. Profile update failed.")
 
+
 class view_all():
     @classmethod
-    def view_all_users(cls,user_type):
-        if user_type != 'Monshi':
-            print("Access denied. Only secretaries can view user information.")
-            return
+    def view_all_users(cls):
         # نمایش همه کاربران در یک جدول
         conn = sqlite3.connect('users.db')
         cursor = conn.cursor()
@@ -231,12 +216,9 @@ class view_all():
             print("{:<20} {:<20} {:<20} {:<20} ".format("User ID", "Username", "Email", "User Type"))
             print("-" * 90)
             for user in users:
-                print("{:<20} {:<20} {:<20} {:<20} ".format(user[0], user[1], user[2],  user[4]))
+                print("{:<20} {:<20} {:<20} {:<20} ".format(user[0], user[1], user[2], user[4]))
         else:
             print("No users found.")
-
-main()
-
 
 
 class Clinic:
@@ -263,33 +245,32 @@ class Clinic:
                 services TEXT,
                 availability TEXT
             )
-        ''') 
-        
+        ''')
+
         # create query
         curser.execute('''
             INSERT INTO clinics (name, address, contact_info, services, availability)''')
-        
+
         # commit changes
         conn.commit()
         # close connection
         conn.close()
-        
+
         # create new clinic object
         new_clinic = Clinic(clinic_id, name, address, contact_info, services, availability)
-        
+
         return new_clinic
-    
-    
+
     def update_clinic_info(self, new_name, new_address, new_contact_info, new_services):
         # connect to database
         conn = sqlite3.connect('clinics.db')
         curser = conn.cursor()
-        
+
         # search for clinic with the name of clinic
         curser.execute('''
             select * from clinics 
             where name =?''',
-            (new_name,))
+                       (new_name,))
         # check if clinic exists
         if curser.fetchone():
             # update the clinic info
@@ -297,18 +278,18 @@ class Clinic:
                 UPDATE clinics
                 SET name =?, address =?, contact_info =?, services =?
                 WHERE name =?''',
-                (new_name, new_address, new_contact_info, new_services, new_name))
-            
+                           (new_name, new_address, new_contact_info, new_services, new_name))
+
             # commit changes
             conn.commit()
             # close connection
             conn.close()
             # create new clinic object
-            update_clinic = Clinic(self.clinic_id, new_name, new_address, new_contact_info, new_services, self.availability)
+            update_clinic = Clinic(self.clinic_id, new_name, new_address, new_contact_info, new_services,
+                                   self.availability)
             print(f"Clinic {new_name} with ID {self.clinic_id} updated successfully.")
             return update_clinic
-        
-        
+
     def view_appointment(self, appointment_id):
         # connect to database
         conn = sqlite3.connect('appointments.db')
@@ -318,7 +299,7 @@ class Clinic:
         cursor.execute('''
             SELECT * FROM appointments
             WHERE appointment_id = ?''',
-            (appointment_id,))
+                       (appointment_id,))
 
         appointment_data = cursor.fetchone()
 
@@ -328,12 +309,11 @@ class Clinic:
             return appointment_data
         else:
             print("Appointment not found.")
-        
-    
+
 
 def register_clinic():
     print("Welcome to the Registration Process!")
-    
+
     # getting input from user
     clinic_id = input("Enter your clinic ID: ")
     name = input("Enter your clinic name: ")
@@ -341,13 +321,13 @@ def register_clinic():
     contact_info = input("Enter your clinic contact info: ")
     services = input("Enter your clinic services: ")
     availability = input("Enter your clinic availability: ")
-    
+
     # creating new clinic object
     new_clinic = Clinic.add_clinic(clinic_id, name, address, contact_info, services, availability)
-    
+
     # printing results
     print(f"Clinic {new_clinic.name} with ID {new_clinic.clinic_id} added successfully.")
-    
+
 
 def update_clinic_info():
     print("Welcome to the Clinic Info Update Process!")
@@ -365,6 +345,84 @@ def update_clinic_info():
     if update_clinic:
         print(f"Clinic {update_clinic.name} with ID {update_clinic.clinic_id} updated successfully.")
 
-  
 
-    
+def is_valid_email(email):
+    # چک کردن فرمت درست ایمیل
+    email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return re.match(email_regex, email)
+
+
+
+def main():
+    while True:
+        print("Welcome to the Clinic Reservation System!")
+        print("1. Register")
+        print("2. Login")
+        print("3. Exit")
+
+        choice = input("Enter your choice (1-3): ")
+
+        if choice == "1":
+            register_user()
+        elif choice == "2":
+            logged_in_user = login_user()
+
+        elif choice == "3":
+            print("Goodbye!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 3.")
+
+def monshi_menu(logged_in_user):
+    while True:
+        print("\nMonshi Menu:")
+        print("1. View Appointments")
+        print("2. Add Appointment")
+        print("3. Increase Appointment Capacity")
+        print("4. View User informations")
+        print("5. Logout")
+
+        monshi_choice = input("Enter your choice (1-5): ")
+
+        if monshi_choice == "1":
+            # اجرای تابع مربوط به نمایش وقت‌های رزرو شده
+            view_appointments(logged_in_user)
+        elif monshi_choice == "2":
+            # اجرای تابع مربوط به افزودن وقت جدید
+            add_appointment(logged_in_user)
+        elif monshi_choice == "3":
+            # اجرای تابع مربوط به افزایش ظرفیت نوبت دهی
+            increase_appointment_capacity(logged_in_user)
+
+        elif monshi_choice == '4':
+            view_all.view_all_users()
+
+        elif monshi_choice == "5":
+            print("Logout Successful!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 5.")
+
+def bimar_menu(logged_in_user):
+    while True:
+        print("\nBimar Menu:")
+        print("1. View Appointments")
+        print("2. Cancel Appointment")
+        print("3. Logout")
+
+        bimar_choice = input("Enter your choice (1-3): ")
+
+        if bimar_choice == "1":
+            # اجرای تابع مربوط به نمایش وقت‌های رزرو شده برای بیمار
+            view_appointments_for_bimar(logged_in_user)
+        elif bimar_choice == "2":
+            # اجرای تابع مربوط به لغو وقت نوبت
+            cancel_appointment(logged_in_user)
+        elif bimar_choice == "3":
+            print("Logout Successful!")
+            break
+        else:
+            print("Invalid choice. Please enter a number between 1 and 3.")
+main()
+
+
