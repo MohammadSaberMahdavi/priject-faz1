@@ -1,6 +1,7 @@
 from datetime import datetime
 import sqlite3
 import re
+import requests
 
 def is_valid_email(email):
     # چک کردن فرمت درست ایمیل
@@ -316,6 +317,20 @@ class Clinic:
             return appointment_data
         else:
             print("Appointment not found.")
+            
+    def set_availability(self, clinic_id, reserved):
+        # Make a POST request to the API to reserve slots
+        url = "http://127.0.0.1:5000/reserve"
+        data = {
+            "id": clinic_id,
+            "reserved": reserved
+        }
+        response = requests.post(url, json=data)
+        
+        if response.status_code == 200:
+            print(f"Slots reserved successfully for clinic with ID {clinic_id}")
+        else:
+            print(f"Failed to reserve slots for clinic with ID {clinic_id}")
 
 
 def register_clinic():
@@ -434,6 +449,6 @@ def bimar_menu(logged_in_user):
             break
         else:
             print("Invalid choice. Please enter a number between 1 and 4.")
+
+
 main()
-
-
