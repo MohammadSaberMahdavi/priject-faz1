@@ -226,6 +226,7 @@ def login_one():
                 bimar_menu(logged_in_user)
             else:
                 print("Invalid user type.")
+
 def update_user_profile():
     print("Welcome to the Profile Update Process!")
 
@@ -286,26 +287,29 @@ class Clinic:
         self.services = services
         self.availability = availability
         self.appointments = []
-
-    def add_clinic(self, clinic_id, name, address, contact_info, services, availability):
+    @classmethod
+    def add_clinic(cls, name, address, contact_info, services, availability):
         # connect to database
         conn = sqlite3.connect('clinics.db')
         curser = conn.cursor()
         # Create the table if it does not exist
         curser.execute('''
             CREATE TABLE IF NOT EXISTS clinics (
-                clinic_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                clinic_id INTEGER PRIMARY KEY,
                 name TEXT,
                 address TEXT,
                 contact_info TEXT,
                 services TEXT,
-                availability TEXT
-            )
+                availability TEXT)
         ''')
+        
+        clinic_id = int(datetime.now().timestamp())
 
         # create query
         curser.execute('''
-            INSERT INTO clinics (name, address, contact_info, services, availability)''')
+            INSERT INTO clinics (clinic_id, name, address, contact_info, services, availability)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (clinic_id, name, address, contact_info, services, availability))
 
         # commit changes
         conn.commit()
@@ -313,11 +317,11 @@ class Clinic:
         conn.close()
 
         # create new clinic object
-        new_clinic = Clinic(clinic_id, name, address, contact_info, services, availability)
+        new_clinic = cls(clinic_id, name, address, contact_info, services, availability)
 
         return new_clinic
-
-    def update_clinic_info(self, new_name, new_address, new_contact_info, new_services):
+    @classmethod
+    def update_clinic_info(cls, clinic_id, new_name, new_address, new_contact_info, new_services):
         # connect to database
         conn = sqlite3.connect('clinics.db')
         curser = conn.cursor()
@@ -325,28 +329,29 @@ class Clinic:
         # search for clinic with the name of clinic
         curser.execute('''
             select * from clinics 
-            where name =?''',
-                       (new_name,))
+            where clinic_id =?''',
+                       (clinic_id,))
+        clinic_data = curser.fetchone()
         # check if clinic exists
-        if curser.fetchone():
+        if clinic_data:
+            # if clinic doess exist with this id
             # update the clinic info
             curser.execute('''
                 UPDATE clinics
                 SET name =?, address =?, contact_info =?, services =?
-                WHERE name =?''',
-                           (new_name, new_address, new_contact_info, new_services, new_name))
+                WHERE clinic_id =?
+                ''',(new_name, new_address, new_contact_info, new_services, clinic_id))
 
             # commit changes
             conn.commit()
             # close connection
             conn.close()
             # create new clinic object
-            update_clinic = Clinic(self.clinic_id, new_name, new_address, new_contact_info, new_services,
-                                   self.availability)
-            print(f"Clinic {new_name} with ID {self.clinic_id} updated successfully.")
+            update_clinic = cls(clinic_id, new_name, new_address, new_contact_info, new_services, clinic_data[5])
+        
             return update_clinic
-
-    def view_appointment(self, appointment_id):
+    @classmethod
+    def view_appointment(cls, appointment_id):
         # connect to database
         conn = sqlite3.connect('appointments.db')
         cursor = conn.cursor()
@@ -365,8 +370,8 @@ class Clinic:
             return appointment_data
         else:
             print("Appointment not found.")
-
-    def set_availability(self, clinic_id, reserved):
+    @classmethod
+    def set_availability(cls, clinic_id, reserved):
         # Make a POST request to the API to reserve slots
         url = "http://127.0.0.1:5000/reserve"
         data = {
@@ -385,7 +390,7 @@ def register_clinic():
     print("Welcome to the Registration Process!")
 
     # getting input from user
-    clinic_id = input("Enter your clinic ID: ")
+    
     name = input("Enter your clinic name: ")
     address = input("Enter your clinic address: ")
     contact_info = input("Enter your clinic contact info: ")
@@ -393,27 +398,35 @@ def register_clinic():
     availability = input("Enter your clinic availability: ")
 
     # creating new clinic object
-    new_clinic = Clinic.add_clinic(clinic_id, name, address, contact_info, services, availability)
+    new_clinic = Clinic.add_clinic(name, address, contact_info, services, availability)
 
     # printing results
-    print(f"Clinic {new_clinic.name} with ID {new_clinic.clinic_id} added successfully.")
+    print(f"Clinic {new_clinic.name} added successfully.")
 
 
 def update_clinic_info():
     print("Welcome to the Clinic Info Update Process!")
 
     # getting input from user
+    clinic_id = int(input("Enter your user ID: "))
     new_name = input("Enter the new clinic name: ")
     new_address = input("Enter the new clinic address: ")
     new_contact_info = input("Enter the new clinic contact info: ")
     new_services = input("Enter the new clinic services: ")
 
     # creating new clinic object
-    update_clinic = Clinic.update_clinic_info(new_name, new_address, new_contact_info, new_services)
+    update_clinic = Clinic.update_clinic_info(clinic_id, new_name, new_address, new_contact_info, new_services)
 
     # printing results
     if update_clinic:
-        print(f"Clinic {update_clinic.name} with ID {update_clinic.clinic_id} updated successfully.")
+        print("\nClinic Update Successful!")
+        print("Updated Clinic ID:", update_clinic.clinic_id)
+        print("Updated name:", update_clinic.name)
+        print("Updated address:", update_clinic.address)
+        print("Updated contact_info:", update_clinic.contact_info)
+        print("Updated services:", update_clinic.services)
+    else:
+        print("\Clinic with the provided ID not found. clinic update failed.")
 
 
 class Notification:
@@ -486,8 +499,10 @@ def monshi_menu(logged_in_user):
         print("2. Add Appointment")
         print("3. Increase Appointment Capacity")
         print("4. View User informations")
-        print("5. Update Profile")
-        print("6. Logout")
+        print("5. Update User Profile")
+        print("6. Add clinic")
+        print("7. Update User Profile")
+        print("8. Logout")
 
         monshi_choice = input("Enter your choice (1-6): ")
 
@@ -507,8 +522,13 @@ def monshi_menu(logged_in_user):
         elif monshi_choice == "5":
             update_user_profile()
 
-
         elif monshi_choice == "6":
+            register_clinic()
+        
+        elif monshi_choice == "7":
+            update_clinic_info()
+
+        elif monshi_choice == "8":
             print("Logout Successful!")
             break
         else:
