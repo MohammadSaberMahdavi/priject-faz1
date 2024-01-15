@@ -2,11 +2,14 @@ from datetime import datetime
 import sqlite3
 import re
 import requests
+import random
 
 def is_valid_email(email):
     # چک کردن فرمت درست ایمیل
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(email_regex, email)
+
+
 class User:
     def __init__(self, user_id, username, email, password, user_type):
         self.user_id = user_id
@@ -73,6 +76,30 @@ class User:
         else:
             return None
 
+
+    @classmethod
+    def login_o(cls, username):
+        # اتصال به دیتابیس
+        conn = sqlite3.connect('users.db')
+        cursor = conn.cursor()
+
+        # جستجو بر اساس نام کاربری و رمز عبور
+        cursor.execute('''
+                SELECT * FROM users
+                WHERE username = ? 
+            ''', (username))
+
+        user_data = cursor.fetchone()
+
+        # بستن اتصال
+        conn.close()
+
+        if user_data:
+            # ایجاد نمونه کاربر در صورت موفقیت
+            user = cls(user_data[0], user_data[1], user_data[2], user_data[3], user_data[4])
+            return user
+        else:
+            return None
     @classmethod
     def update_profile(cls, user_id, new_username, new_email, new_password):
         # اتصال به دیتابیس
@@ -109,26 +136,29 @@ class User:
             return None
 
     def view_appointments(self):
-            # نمایش نوبت‌های اختصاص یافته به کاربر
-            dbase = sqlite3.connect('users.db')
-            cursor = dbase.cursor()
+        # نمایش نوبت‌های اختصاص یافته به کاربر
+        dbase = sqlite3.connect('appointment.db')
+        cursor = dbase.cursor()
 
-            view_query = f'''
+        view_query = f'''
                 SELECT * FROM appointments
                 WHERE user_id = ?
             '''
 
-            cursor.execute(view_query, (self.user_id,))
-            appointments = cursor.fetchall()
+        cursor.execute(view_query, (self.user_id,))
+        appointments = cursor.fetchall()
 
-            dbase.close()
+        dbase.close()
 
-            if appointments:
-                print("Appointments:")
-                for appointment in appointments:
-                    print(appointment)
-            else:
-                print("You dont have any Appointments")
+        if appointments:
+            print("Appointments:")
+            for appointment in appointments:
+                print(appointment)
+        else:
+            print("You dont have any Appointments")
+
+
+
 
 
 def register_user():
@@ -144,7 +174,7 @@ def register_user():
     user_type = input("Enter your user type (Monshi,Bimar): ")
     while user_type not in ['Bimar', 'Monshi']:
         print("Invalid user type. Please enter either 'Bimar' or 'Monshi'.")
-        user_type = input("Enter your user type (Bimar/Monshi): ").lower()
+        user_type = input("Enter your user type (Bimar/Monshi): ")
 
     # صدا زدن متد register و دریافت نتیجه
     registered_user = User.register(username, email, password, user_type)
@@ -177,9 +207,25 @@ def login_user():
             else:
                 print("Invalid user type.")
 
+def login_one():
+    print("Welcome to the Login Process!")
+    username = input("Enter your username: ")
 
-
-
+    logged_in_user = User.login_o(username)
+    if logged_in_user:
+        print("\nLogin Successful!")
+        print("User ID:", logged_in_user.user_id)
+        print("Username:", logged_in_user.username)
+        print("Email:", logged_in_user.email)
+        print("User Type:", logged_in_user.user_type)
+        if logged_in_user:
+            if logged_in_user.user_type == "Monshi":
+                monshi_menu(logged_in_user)
+            elif logged_in_user.user_type == "Bimar":
+                # اگر نوع کاربر بیمار باشد، منو مخصوص بیمار فراخوانی شود (تابع مربوطه تعریف شود)
+                bimar_menu(logged_in_user)
+            else:
+                print("Invalid user type.")
 def update_user_profile():
     print("Welcome to the Profile Update Process!")
 
@@ -227,6 +273,8 @@ class view_all():
                 print("{:<20} {:<20} {:<20} {:<20} ".format(user[0], user[1], user[2], user[4]))
         else:
             print("No users found.")
+
+
 
 
 class Clinic:
@@ -317,7 +365,7 @@ class Clinic:
             return appointment_data
         else:
             print("Appointment not found.")
-            
+
     def set_availability(self, clinic_id, reserved):
         # Make a POST request to the API to reserve slots
         url = "http://127.0.0.1:5000/reserve"
@@ -326,7 +374,7 @@ class Clinic:
             "reserved": reserved
         }
         response = requests.post(url, json=data)
-        
+
         if response.status_code == 200:
             print(f"Slots reserved successfully for clinic with ID {clinic_id}")
         else:
@@ -368,7 +416,29 @@ def update_clinic_info():
         print(f"Clinic {update_clinic.name} with ID {update_clinic.clinic_id} updated successfully.")
 
 
+class Notification:
+    def __init__(self, notification_id, user_id, message, date_time):
+        self.notification_id = notification_id
+        self.user_id = user_id
+        self.message = message
+        self.date_time = date_time
 
+    @classmethod
+    def generate_one_time_password(cls):
+        # تولید یک رمز عبور تصادفی با طول 6 رقم
+        return ''.join(random.choices('0123456789', k=6))
+password = 0
+def send_notification():
+    global password
+    user_id = input("Enter the destination user ID: ")
+    one_time_password = Notification.generate_one_time_password()
+
+    if user_id == str(user_id):
+        print(f"User ID: {user_id}")
+        print(f"One-time Password: {one_time_password}")
+        password = one_time_password
+    else:
+        print("Invalid user ID. Notification not sent.")
 
 
 def main():
@@ -379,17 +449,35 @@ def main():
         print("3. Exit")
 
         choice = input("Enter your choice (1-3): ")
-
+        if choice == "C":
+            register_clinic()
         if choice == "1":
             register_user()
         elif choice == "2":
-            logged_in_user = login_user()
+            print("1. Unique Password")
+            print("2. One Time Password")
+            chice2 = input("Enter your choice (1-3): ")
+
+            if chice2 == "1":
+                logged_in_user = login_user()
+            elif chice2 == "2":
+                send_notification()
+                a = input("lll")
+
+                if a == password:
+                    login_one()
+                else:
+                    print("N")
+                    main()
+
+
 
         elif choice == "3":
             print("Goodbye!")
             break
         else:
             print("Invalid choice. Please enter a number between 1 and 3.")
+
 
 def monshi_menu(logged_in_user):
     while True:
@@ -416,7 +504,7 @@ def monshi_menu(logged_in_user):
         elif monshi_choice == '4':
             view_all.view_all_users()
 
-        elif monshi_choice=="5":
+        elif monshi_choice == "5":
             update_user_profile()
 
 
@@ -426,29 +514,35 @@ def monshi_menu(logged_in_user):
         else:
             print("Invalid choice. Please enter a number between 1 and 6.")
 
+
 def bimar_menu(logged_in_user):
     while True:
         print("\nBimar Menu:")
         print("1. View Appointments")
-        print("2. Cancel Appointment")
-        print("3. Update Profile")
-        print("4. Logout")
+        print("2. Add Appointment")
+        print("3. Cancel Appointment")
+        print("4. Update Profile")
+        print("5. Logout")
 
-        bimar_choice = input("Enter your choice (1-4): ")
+        bimar_choice = input("Enter your choice (1-5): ")
 
         if bimar_choice == "1":
             # اجرای تابع مربوط به نمایش وقت‌های رزرو شده برای بیمار
-            view_appointments_for_bimar(logged_in_user)
+            User.view_appointments(logged_in_user)
         elif bimar_choice == "2":
+            pass
+        elif bimar_choice == "3":
             # اجرای تابع مربوط به لغو وقت نوبت
             cancel_appointment(logged_in_user)
-        elif bimar_choice=="3":
-            update_user_profile()
         elif bimar_choice == "4":
+            update_user_profile()
+        elif bimar_choice == "5":
             print("Logout Successful!")
             break
         else:
-            print("Invalid choice. Please enter a number between 1 and 4.")
+            print("Invalid choice. Please enter a number between 1 and 5.")
+
+
 
 
 main()
