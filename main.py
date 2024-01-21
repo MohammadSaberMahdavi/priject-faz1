@@ -350,41 +350,38 @@ class Clinic:
             update_clinic = cls(clinic_id, new_name, new_address, new_contact_info, new_services, clinic_data[5])
         
             return update_clinic
+        
+    
     @classmethod
-    def view_appointment(cls, appointment_id):
-        # connect to database
-        conn = sqlite3.connect('appointments.db')
-        cursor = conn.cursor()
-
-        # search for appointment using appointment_id
-        cursor.execute('''
-            SELECT * FROM appointments
-            WHERE appointment_id = ?''',
-                       (appointment_id,))
-
-        appointment_data = cursor.fetchone()
-
-        if appointment_data:
-            appointment_id, date, time, patient_name = appointment_data
-            print(f"Appointment ID: {appointment_id} Date: {date} Time: {time} Patient Name: {patient_name}")
-            return appointment_data
-        else:
-            print("Appointment not found.")
-    @classmethod
-    def set_availability(cls, clinic_id, reserved):
-        # Make a POST request to the API to reserve slots
-        url = "http://127.0.0.1:5000/reserve"
-        data = {
-            "id": clinic_id,
-            "reserved": reserved
-        }
-        response = requests.post(url, json=data)
-
+    def view_appointment(cls, clinic_id):
+        url = "http://127.0.0.1:5000/slots"
+        response = requests.get_slots(url)
         if response.status_code == 200:
-            print(f"Slots reserved successfully for clinic with ID {clinic_id}")
+            database = response.json()
+            if clinic_id in database:
+                print(f"Available slots for clinic with ID {clinic_id}: {database[clinic_id]}")
+            else:
+                print(f"No available slots found for clinic with ID {clinic_id}")
         else:
-            print(f"Failed to reserve slots for clinic with ID {clinic_id}")
-
+            print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
+           
+    @classmethod
+    def set_availability(cls, clinic_id):
+        url = "http://127.0.0.1:5000/slots"
+        response = requests.get_slots(url)
+        if response.status_code == 200:
+            database = response.json()
+            if clinic_id in database:
+                if database[clinic_id] == 0:
+                    print('There are no appointments available for the clinic you are looking for')
+                elif database[clinic_id] > 0:
+                    print(f"{database[clinic_id]} appointments are available for the clinic you want")
+            else:
+                print(f"No available slots found for clinic with ID {clinic_id}")
+        else:
+            print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
+            
+            
 
 def register_clinic():
     print("Welcome to the Registration Process!")
@@ -440,6 +437,7 @@ class Notification:
     def generate_one_time_password(cls):
         # تولید یک رمز عبور تصادفی با طول 6 رقم
         return ''.join(random.choices('0123456789', k=6))
+
 password = 0
 def send_notification():
     global password
@@ -492,6 +490,7 @@ def main():
             print("Invalid choice. Please enter a number between 1 and 3.")
 
 
+            
 def monshi_menu(logged_in_user):
     while True:
         print("\nMonshi Menu:")
@@ -507,8 +506,10 @@ def monshi_menu(logged_in_user):
         monshi_choice = input("Enter your choice (1-6): ")
 
         if monshi_choice == "1":
+            clinic_id = input("Enter the clinic_id: ")
+            print(type(clinic_id))
             # اجرای تابع مربوط به نمایش وقت‌های رزرو شده
-            view_appointments(logged_in_user)
+            Clinic.view_appointment(clinic_id)
         elif monshi_choice == "2":
             # اجرای تابع مربوط به افزودن وقت جدید
             add_appointment(logged_in_user)
@@ -561,7 +562,6 @@ def bimar_menu(logged_in_user):
             break
         else:
             print("Invalid choice. Please enter a number between 1 and 5.")
-
 
 
 
