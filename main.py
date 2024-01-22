@@ -4,12 +4,10 @@ import re
 import requests
 import random
 
-
 def is_valid_email(email):
     # چک کردن فرمت درست ایمیل
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
     return re.match(email_regex, email)
-
 
 class User:
     def __init__(self, user_id, username, email, password, user_type):
@@ -66,7 +64,6 @@ class User:
             ''', (username, password))
 
         user_data = cursor.fetchone()
-
         # بستن اتصال
         conn.close()
 
@@ -537,16 +534,26 @@ class AppointmentScheduler:
         conn.close()
 
 
-# نمایش داده های جدول نوبت دهی
-def show_appointment_table():
-    # connect to database
-    conn = sqlite3.connect('appointments.db')
-    cursor = conn.cursor()
+class show_appointment():
+
     # نمایش داده های جدول نوبت دهی
-    cursor.execute('SELECT * FROM appointments')
-    appointments = cursor.fetchall()
-    for appointment in appointments:
-        print(appointment)
+    @classmethod
+    def show_appointment_table(cls):
+        # connect to database
+        conn = sqlite3.connect('appointments.db')
+        cursor = conn.cursor()
+        # نمایش داده های جدول نوبت دهی
+        cursor.execute('SELECT * FROM appointments')
+        appointments = cursor.fetchall()
+        conn.close()
+        if appointments:
+            print("All Appointment:")
+            print("{:<20} {:<20} {:<20} ".format("User ID", "Clinic ID", "DateTime"))
+            print("-" * 90)
+            for appointment in appointments:
+                print("{:<20} {:<20} {:<20}".format(appointment[0], appointment[1], appointment[2]))
+        else:
+            print("No users found.")
 
 
 password = 0
@@ -623,7 +630,7 @@ def monshi_menu(logged_in_user):
     while True:
         print("\nMonshi Menu:")
         print("1. View Appointments")
-        print("2. View Appointment")
+        print("2. View Appointment for a Clinic")
         print("3. Cancel Appointment")
         print("4. Increase Appointment Capacity")
         print("5. View User Informations")
@@ -635,12 +642,12 @@ def monshi_menu(logged_in_user):
         monshi_choice = input("Enter your choice (1-8): ")
 
         if monshi_choice == "1":
-            show_appointment_table()
+            show_appointment.show_appointment_table()
 
         elif monshi_choice == "2":
             clinic_id = input("Enter clinic ID : ")
             Clinic.view_appointment(clinic_id)
-        
+
         elif monshi_choice =="3":
             user_id = input("Enter User ID:")
             clinic_id = input("Enter Clinic ID:")
@@ -688,7 +695,7 @@ def bimar_menu(logged_in_user):
 
         if bimar_choice == "1":
             # اجرای تابع مربوط به نمایش وقت‌های رزرو شده برای بیمار
-            show_appointment_table()
+            show_appointment.show_appointment_table()
         elif bimar_choice == "2":
             user_id=input("Enter User ID:")
             clinic_id = input("Enter Clinic ID:")
@@ -712,6 +719,5 @@ def bimar_menu(logged_in_user):
 
         else:
             print("Invalid choice. Please enter a number between 1 and 5.")
-
 
 main()
