@@ -592,8 +592,6 @@ def main():
         print("3. Exit")
 
         choice = input("Enter your choice (1-3): ")
-        if choice == "C":
-            register_clinic()
         if choice == "1":
             register_user()
         elif choice == "2":
@@ -625,13 +623,14 @@ def monshi_menu(logged_in_user):
     while True:
         print("\nMonshi Menu:")
         print("1. View Appointments")
-        print("2. view Appointment")
-        print("3. Increase Appointment Capacity")
-        print("4. View User informations")
-        print("5. Add clinic")
-        print("6. Update clinic Profile")
-        print("7. Update User Profile")
-        print("8. Logout")
+        print("2. View Appointment")
+        print("3. Cancel Appointment")
+        print("4. Increase Appointment Capacity")
+        print("5. View User Informations")
+        print("6. Add Clinic")
+        print("7. Update Clinic Profile")
+        print("8. Update User Profile")
+        print("9. Logout")
 
         monshi_choice = input("Enter your choice (1-8): ")
 
@@ -641,31 +640,39 @@ def monshi_menu(logged_in_user):
         elif monshi_choice == "2":
             clinic_id = input("Enter clinic ID : ")
             Clinic.view_appointment(clinic_id)
+        
+        elif monshi_choice =="3":
+            user_id = input("Enter User ID:")
+            clinic_id = input("Enter Clinic ID:")
+            datetime = input("Enter Datetime:  (Input format(%Y-%m-%d %H:%M:%S))")
+            AppointmentScheduler.cancel_patient_appointments(user_id,clinic_id,datetime)
+            AppointmentScheduler.cancel_appointment(clinic_id)
 
-        elif monshi_choice == "3":
-            clinic_id = input("enter cinic_id : ")
-            new_capacity = input("enter new_capacity: ")
+        elif monshi_choice == "4":
+            clinic_id = input("Enter cinic_id : ")
+            new_capacity = input("Enter new_capacity: ")
             increase_appointment(logged_in_user, new_capacity)
 
-        elif monshi_choice == '4':
+        elif monshi_choice == '5':
             view_all.view_all_users()
 
-        elif monshi_choice == "5":
+        elif monshi_choice == "6":
             register_clinic()
 
-        elif monshi_choice == "6":
+        elif monshi_choice == "7":
             update_clinic_info()
 
-        elif monshi_choice == "7":
+        elif monshi_choice == "8":
             update_user_profile()
 
 
-        elif monshi_choice == "8":
+        elif monshi_choice == "9":
             print("Logout Successful!")
             break
 
+
         else:
-            print("Invalid choice. Please enter a number between 1 and 8.")
+            print("Invalid choice. Please enter a number between 1 and 9.")
 
 
 def bimar_menu(logged_in_user):
