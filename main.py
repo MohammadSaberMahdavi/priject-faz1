@@ -4,6 +4,7 @@ import re
 import requests
 import random
 
+
 def is_valid_email(email):
     # چک کردن فرمت درست ایمیل
     email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
@@ -76,7 +77,6 @@ class User:
         else:
             return None
 
-
     @classmethod
     def login_o(cls, username):
         # اتصال به دیتابیس
@@ -100,6 +100,7 @@ class User:
             return user
         else:
             return None
+
     @classmethod
     def update_profile(cls, user_id, new_username, new_email, new_password):
         # اتصال به دیتابیس
@@ -158,9 +159,6 @@ class User:
             print("You dont have any Appointments")
 
 
-
-
-
 def register_user():
     print("Welcome to the Registration Process!")
 
@@ -207,6 +205,7 @@ def login_user():
             else:
                 print("Invalid user type.")
 
+
 def login_one():
     print("Welcome to the Login Process!")
     username = input("Enter your username: ")
@@ -226,6 +225,7 @@ def login_one():
                 bimar_menu(logged_in_user)
             else:
                 print("Invalid user type.")
+
 
 def update_user_profile():
     print("Welcome to the Profile Update Process!")
@@ -276,8 +276,6 @@ class view_all():
             print("No users found.")
 
 
-
-
 class Clinic:
     def __init__(self, clinic_id, name, address, contact_info, services, availability):
         self.clinic_id = clinic_id
@@ -287,6 +285,7 @@ class Clinic:
         self.services = services
         self.availability = availability
         self.appointments = []
+
     @classmethod
     def add_clinic(cls, name, address, contact_info, services, availability):
         # connect to database
@@ -302,7 +301,7 @@ class Clinic:
                 services TEXT,
                 availability TEXT)
         ''')
-        
+
         clinic_id = int(datetime.now().timestamp())
 
         # create query
@@ -320,6 +319,7 @@ class Clinic:
         new_clinic = cls(clinic_id, name, address, contact_info, services, availability)
 
         return new_clinic
+
     @classmethod
     def update_clinic_info(cls, clinic_id, new_name, new_address, new_contact_info, new_services):
         # connect to database
@@ -340,7 +340,7 @@ class Clinic:
                 UPDATE clinics
                 SET name =?, address =?, contact_info =?, services =?
                 WHERE clinic_id =?
-                ''',(new_name, new_address, new_contact_info, new_services, clinic_id))
+                ''', (new_name, new_address, new_contact_info, new_services, clinic_id))
 
             # commit changes
             conn.commit()
@@ -348,8 +348,9 @@ class Clinic:
             conn.close()
             # create new clinic object
             update_clinic = cls(clinic_id, new_name, new_address, new_contact_info, new_services, clinic_data[5])
-        
+
             return update_clinic
+
     @classmethod
     def view_appointment(cls, clinic_id):
         url = "http://127.0.0.1:5000/slots"
@@ -362,6 +363,7 @@ class Clinic:
                 print(f"No available slots found for clinic with ID {clinic_id}")
         else:
             print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
+
     @classmethod
     def set_availability(cls, clinic_id):
         url = "http://127.0.0.1:5000/slots"
@@ -378,11 +380,12 @@ class Clinic:
         else:
             print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
 
+
 def register_clinic():
     print("Welcome to the Registration Process!")
 
     # getting input from user
-    
+
     name = input("Enter your clinic name: ")
     address = input("Enter your clinic address: ")
     contact_info = input("Enter your clinic contact info: ")
@@ -394,6 +397,7 @@ def register_clinic():
 
     # printing results
     print(f"Clinic {new_clinic.name} added successfully.")
+
 
 def update_clinic_info():
     print("Welcome to the Clinic Info Update Process!")
@@ -420,7 +424,6 @@ def update_clinic_info():
         print("\Clinic with the provided ID not found. clinic update failed.")
 
 
-
 class Notification:
     def __init__(self, notification_id, user_id, message, date_time):
         self.notification_id = notification_id
@@ -440,8 +443,9 @@ class AppointmentScheduler:
         self.ClinicID = ClinicID
         self.UserID = UserID
         self.DateTime = DateTime
-        self.Status = Status 
-    # api تغییر ظرفیت مطب در 
+        self.Status = Status
+        # api تغییر ظرفیت مطب در
+
     @classmethod
     def get_appointment(cls, clinic_id):
         response = requests.get('http://127.0.0.1:5000/slots')  # دریافت اطلاعات از API
@@ -462,7 +466,7 @@ class AppointmentScheduler:
                 print('This clinic has no available slots.')
         else:
             print('Failed to retrieve slots from the API.')
-    
+
     # ثبت نوبت در دیتابیس
     @classmethod
     def get_patient_appointments(cls, user_id, clinic_id, date_time):
@@ -479,14 +483,14 @@ class AppointmentScheduler:
         ''')
         # درج اطلاعات کاربر به دیتابیس
         cursor.execute('''
-            INSERT INTO users (user_id, clinic_id, date_time)
+            INSERT INTO appointments (user_id, clinic_id, date_time)
             VALUES (?, ?, ?)
-        ''', (user_id, clinic_id, date_time ))
+        ''', (user_id, clinic_id, date_time))
         # ذخیره تغییرات و بستن اتصال
         conn.commit()
         conn.close()
-    
-    # api تغییر ظرفیت مطب در 
+
+    # api تغییر ظرفیت مطب در
     @classmethod
     def cancel_appointment(cls, clinic_id):
         response = requests.get('http://127.0.0.1:5000/slots')  # دریافت اطلاعات از API
@@ -498,9 +502,10 @@ class AppointmentScheduler:
             else:
                 print('This clinic does not exist.')
         else:
-            print('Failed to retrieve slots from the API.')    
+            print('Failed to retrieve slots from the API.')
 
-    # حذف نوبت از دیتابیس
+            # حذف نوبت از دیتابیس
+
     @classmethod
     def cancel_patient_appointments(cls, user_id, clinic_id, date_time):
         # ایجاد اتصال به دیتابیس
@@ -514,8 +519,8 @@ class AppointmentScheduler:
         # ذخیره تغییرات و بستن اتصال
         conn.commit()
         conn.close()
-    
-    #زمان بندی مجدد نوبت بیمار 
+
+    # زمان بندی مجدد نوبت بیمار
     @classmethod
     def retiming_patient_appointments(cls, user_id, clinic_id, old_date_time, new_date_time):
         # ایجاد اتصال به دیتابیس
@@ -532,7 +537,6 @@ class AppointmentScheduler:
         conn.close()
 
 
-
 # نمایش داده های جدول نوبت دهی
 def show_appointment_table():
     # connect to database
@@ -543,9 +547,11 @@ def show_appointment_table():
     appointments = cursor.fetchall()
     for appointment in appointments:
         print(appointment)
-            
-            
+
+
 password = 0
+
+
 def send_notification():
     global password
     user_id = input("Enter the destination user ID: ")
@@ -580,12 +586,12 @@ def main():
                 logged_in_user = login_user()
             elif chice2 == "2":
                 send_notification()
-                a = input("lll")
+                a = input("Enter One Password:")
 
                 if a == password:
                     login_one()
                 else:
-                    print("N")
+                    print("Your Password Not Useful")
                     main()
 
 
@@ -596,57 +602,49 @@ def main():
         else:
             print("Invalid choice. Please enter a number between 1 and 3.")
 
-
-            
 def monshi_menu(logged_in_user):
     while True:
         print("\nMonshi Menu:")
         print("1. View Appointments")
-        print("2. Add Appointment")
+        print("2. view Appointment")
         print("3. Increase Appointment Capacity")
         print("4. View User informations")
-        print("5. Update User Profile")
-        print("6. Add clinic")
-        print("7. Update clinic Profile")
+        print("5. Add clinic")
+        print("6. Update clinic Profile")
+        print("7. Update User Profile")
         print("8. Logout")
-        print("9. view Appointment")
-        
 
-        monshi_choice = input("Enter your choice (1-6): ")
+        monshi_choice = input("Enter your choice (1-8): ")
 
-        #1. View Appointments
         if monshi_choice == "1":
             show_appointment_table()
-        #2. Add Appointment   
+
         elif monshi_choice == "2":
-            clinic_id = input("Enter the clinic_id: ")
-            # اجرای تابع مربوط به افزودن وقت جدید
-            
+            clinic_id = input("Enter clinic ID : ")
+            Clinic.view_appointment(clinic_id)
+
         elif monshi_choice == "3":
-            # اجرای تابع مربوط به افزایش ظرفیت نوبت دهی
             increase_appointment_capacity(logged_in_user)
 
         elif monshi_choice == '4':
             view_all.view_all_users()
 
         elif monshi_choice == "5":
-            update_user_profile()
+            register_clinic()
 
         elif monshi_choice == "6":
-            register_clinic()
-        
-        elif monshi_choice == "7":
             update_clinic_info()
+
+        elif monshi_choice == "7":
+            update_user_profile()
+
 
         elif monshi_choice == "8":
             print("Logout Successful!")
             break
-        
-        elif monshi_choice == "9":
-            clinic_id = input("enter clini ID : ")
-            Clinic.view_appointment(clinic_id)
+
         else:
-            print("Invalid choice. Please enter a number between 1 and 6.")
+            print("Invalid choice. Please enter a number between 1 and 8.")
 
 
 def bimar_menu(logged_in_user):
@@ -662,21 +660,30 @@ def bimar_menu(logged_in_user):
 
         if bimar_choice == "1":
             # اجرای تابع مربوط به نمایش وقت‌های رزرو شده برای بیمار
-            User.view_appointments(logged_in_user)
+            show_appointment_table()
         elif bimar_choice == "2":
-            pass
+            user_id=input("Enter User ID:")
+            clinic_id = input("Enter Clinic ID:")
+            datetime = input("Enter Datetime:  (Input format(%Y-%m-%d %H:%M:%S))")
+            AppointmentScheduler.get_patient_appointments(user_id,clinic_id,datetime)
+            AppointmentScheduler.get_appointment(clinic_id)
+
         elif bimar_choice == "3":
-            # اجرای تابع مربوط به لغو وقت نوبت
-            cancel_appointment(logged_in_user)
+            user_id = input("Enter User ID:")
+            clinic_id = input("Enter Clinic ID:")
+            datetime = input("Enter Datetime:  (Input format(%Y-%m-%d %H:%M:%S))")
+            AppointmentScheduler.cancel_patient_appointments(user_id,clinic_id,datetime)
+            AppointmentScheduler.cancel_appointment(clinic_id)
+
         elif bimar_choice == "4":
             update_user_profile()
+
         elif bimar_choice == "5":
             print("Logout Successful!")
             break
+
         else:
             print("Invalid choice. Please enter a number between 1 and 5.")
-
-
 
 
 main()
