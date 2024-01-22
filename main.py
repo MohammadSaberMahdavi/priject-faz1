@@ -564,6 +564,25 @@ def send_notification():
     else:
         print("Invalid user ID. Notification not sent.")
 
+def increase_appointment(clinic_id, new_capacity):
+    api_url = 'http://127.0.0.1:5000/slots'  # آدرس API
+    response = requests.get(api_url)  # دریافت اطلاعات از API
+
+    if response.status_code == 200:
+        database = response.json()
+        if clinic_id in database:
+            database[clinic_id] = new_capacity  # تغییر ظرفیت
+            update_url = 'http://127.0.0.1:5000/update_slots'  # آدرس بروزرسانی API
+            update_response = requests.post(update_url, json=database)  # ارسال درخواست بروزرسانی
+            if update_response.status_code == 200 and update_response.json().get('success'):
+                print(f'Capacity updated successfully for clinic {clinic_id} to {new_capacity}')
+            else:
+                print('Failed to update capacity.')
+        else:
+            print(f'Clinic {clinic_id} does not exist.')
+    else:
+        print('Failed to retrieve data from the API.')
+
 
 def main():
     while True:
@@ -624,7 +643,9 @@ def monshi_menu(logged_in_user):
             Clinic.view_appointment(clinic_id)
 
         elif monshi_choice == "3":
-            increase_appointment_capacity(logged_in_user)
+            clinic_id = input("enter cinic_id : ")
+            new_capacity = input("enter new_capacity: ")
+            increase_appointment(logged_in_user, new_capacity)
 
         elif monshi_choice == '4':
             view_all.view_all_users()
