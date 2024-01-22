@@ -609,7 +609,8 @@ def monshi_menu(logged_in_user):
         print("6. Add clinic")
         print("7. Update clinic Profile")
         print("8. Logout")
-        print("9")
+        print("9. view Appointment")
+        
 
         monshi_choice = input("Enter your choice (1-6): ")
 
@@ -640,6 +641,10 @@ def monshi_menu(logged_in_user):
         elif monshi_choice == "8":
             print("Logout Successful!")
             break
+        
+        elif monshi_choice == "9":
+            clinic_id = input("enter clini ID : ")
+            Clinic.view_appointment(clinic_id)
         else:
             print("Invalid choice. Please enter a number between 1 and 6.")
 
