@@ -350,12 +350,10 @@ class Clinic:
             update_clinic = cls(clinic_id, new_name, new_address, new_contact_info, new_services, clinic_data[5])
         
             return update_clinic
-        
-    
     @classmethod
     def view_appointment(cls, clinic_id):
         url = "http://127.0.0.1:5000/slots"
-        response = requests.get_slots(url)
+        response = requests.get(url)
         if response.status_code == 200:
             database = response.json()
             if clinic_id in database:
@@ -364,11 +362,10 @@ class Clinic:
                 print(f"No available slots found for clinic with ID {clinic_id}")
         else:
             print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
-           
     @classmethod
     def set_availability(cls, clinic_id):
         url = "http://127.0.0.1:5000/slots"
-        response = requests.get_slots(url)
+        response = requests.get(url)
         if response.status_code == 200:
             database = response.json()
             if clinic_id in database:
@@ -380,8 +377,6 @@ class Clinic:
                 print(f"No available slots found for clinic with ID {clinic_id}")
         else:
             print(f"Failed to retrieve slots for clinic with ID {clinic_id}")
-            
-            
 
 def register_clinic():
     print("Welcome to the Registration Process!")
@@ -399,7 +394,6 @@ def register_clinic():
 
     # printing results
     print(f"Clinic {new_clinic.name} added successfully.")
-
 
 def update_clinic_info():
     print("Welcome to the Clinic Info Update Process!")
@@ -426,6 +420,7 @@ def update_clinic_info():
         print("\Clinic with the provided ID not found. clinic update failed.")
 
 
+
 class Notification:
     def __init__(self, notification_id, user_id, message, date_time):
         self.notification_id = notification_id
@@ -438,6 +433,118 @@ class Notification:
         # تولید یک رمز عبور تصادفی با طول 6 رقم
         return ''.join(random.choices('0123456789', k=6))
 
+
+class AppointmentScheduler:
+    def __init__(self, AppointmentID, ClinicID, UserID, DateTime, Status):
+        self.AppointmentID = AppointmentID
+        self.ClinicID = ClinicID
+        self.UserID = UserID
+        self.DateTime = DateTime
+        self.Status = Status 
+    # api تغییر ظرفیت مطب در 
+    @classmethod
+    def get_appointment(cls, clinic_id):
+        response = requests.get('http://127.0.0.1:5000/slots')  # دریافت اطلاعات از API
+        if response.status_code == 200:
+            slots = response.json()
+            if clinic_id in slots and slots[clinic_id] > 0:
+                reserved_slots = 1  # تعداد اسلات‌های رزرو شده
+                payload = {'id': clinic_id, 'reserved': reserved_slots}
+                reserve_response = requests.post('http://127.0.0.1:5000/reserve', json=payload)  # ارسال درخواست رزرو
+                if reserve_response.status_code == 200 and reserve_response.json().get('success'):
+                    # اگر رزرو با موفقیت انجام شود
+                    slots[clinic_id] -= reserved_slots  # کاهش تعداد اسلات‌های آزاد
+                    print('Appointment assigned successfully!')
+                else:
+                    # اگر رزرو ناموفق باشد
+                    print('Failed to assign appointment.')
+            else:
+                print('This clinic has no available slots.')
+        else:
+            print('Failed to retrieve slots from the API.')
+    
+    # ثبت نوبت در دیتابیس
+    @classmethod
+    def get_patient_appointments(cls, user_id, clinic_id, date_time):
+        # ایجاد اتصال به دیتابیس
+        conn = sqlite3.connect('appointments.db')
+        cursor = conn.cursor()
+        # ایجاد جدول اگر وجود نداشته باشد
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS appointments (
+                user_id INTEGER PRIMARY KEY,
+                clinic_id INTEGER,
+                date_time DATETIME
+            )
+        ''')
+        # درج اطلاعات کاربر به دیتابیس
+        cursor.execute('''
+            INSERT INTO users (user_id, clinic_id, date_time)
+            VALUES (?, ?, ?)
+        ''', (user_id, clinic_id, date_time ))
+        # ذخیره تغییرات و بستن اتصال
+        conn.commit()
+        conn.close()
+    
+    # api تغییر ظرفیت مطب در 
+    @classmethod
+    def cancel_appointment(cls, clinic_id):
+        response = requests.get('http://127.0.0.1:5000/slots')  # دریافت اطلاعات از API
+        if response.status_code == 200:
+            slots = response.json()
+            if clinic_id in slots:
+                slots[clinic_id] += 1  # افزایش تعداد نوبت‌های اسلات مطب
+                print('Appointment canceled successfully!')
+            else:
+                print('This clinic does not exist.')
+        else:
+            print('Failed to retrieve slots from the API.')    
+
+    # حذف نوبت از دیتابیس
+    @classmethod
+    def cancel_patient_appointments(cls, user_id, clinic_id, date_time):
+        # ایجاد اتصال به دیتابیس
+        conn = sqlite3.connect('appointments.db')
+        cursor = conn.cursor()
+        # حذف نوبت مربوطه از جدول
+        cursor.execute('''
+            DELETE FROM appointments
+            WHERE user_id = ? AND clinic_id = ? AND date_time = ?
+        ''', (user_id, clinic_id, date_time))
+        # ذخیره تغییرات و بستن اتصال
+        conn.commit()
+        conn.close()
+    
+    #زمان بندی مجدد نوبت بیمار 
+    @classmethod
+    def retiming_patient_appointments(cls, user_id, clinic_id, old_date_time, new_date_time):
+        # ایجاد اتصال به دیتابیس
+        conn = sqlite3.connect('appointments.db')
+        cursor = conn.cursor()
+        # بروزرسانی زمان مربوط به نوبت
+        cursor.execute('''
+            UPDATE appointments
+            SET date_time = ?
+            WHERE user_id = ? AND clinic_id = ? AND date_time = ?
+        ''', (new_date_time, user_id, clinic_id, old_date_time))
+        # ذخیره تغییرات و بستن اتصال
+        conn.commit()
+        conn.close()
+
+
+
+# نمایش داده های جدول نوبت دهی
+def show_appointment_table():
+    # connect to database
+    conn = sqlite3.connect('appointments.db')
+    cursor = conn.cursor()
+    # نمایش داده های جدول نوبت دهی
+    cursor.execute('SELECT * FROM appointments')
+    appointments = cursor.fetchall()
+    for appointment in appointments:
+        print(appointment)
+            
+            
 password = 0
 def send_notification():
     global password
@@ -467,7 +574,7 @@ def main():
         elif choice == "2":
             print("1. Unique Password")
             print("2. One Time Password")
-            chice2 = input("Enter your choice (1-3): ")
+            chice2 = input("Enter your choice (1-2): ")
 
             if chice2 == "1":
                 logged_in_user = login_user()
@@ -500,19 +607,20 @@ def monshi_menu(logged_in_user):
         print("4. View User informations")
         print("5. Update User Profile")
         print("6. Add clinic")
-        print("7. Update User Profile")
+        print("7. Update clinic Profile")
         print("8. Logout")
+        print("9")
 
         monshi_choice = input("Enter your choice (1-6): ")
 
+        #1. View Appointments
         if monshi_choice == "1":
-            clinic_id = input("Enter the clinic_id: ")
-            print(type(clinic_id))
-            # اجرای تابع مربوط به نمایش وقت‌های رزرو شده
-            Clinic.view_appointment(clinic_id)
+            show_appointment_table()
+        #2. Add Appointment   
         elif monshi_choice == "2":
+            clinic_id = input("Enter the clinic_id: ")
             # اجرای تابع مربوط به افزودن وقت جدید
-            add_appointment(logged_in_user)
+            
         elif monshi_choice == "3":
             # اجرای تابع مربوط به افزایش ظرفیت نوبت دهی
             increase_appointment_capacity(logged_in_user)
@@ -562,6 +670,7 @@ def bimar_menu(logged_in_user):
             break
         else:
             print("Invalid choice. Please enter a number between 1 and 5.")
+
 
 
 
